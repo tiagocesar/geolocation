@@ -1,6 +1,6 @@
 .idea/
 .DS_Store
-requirements
+requirements.md
 
 # Binaries for programs and plugins
 *.exe
