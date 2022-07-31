@@ -4,6 +4,9 @@ run-importer:
 	DUMP_FILE=data_dump.csv \
 	DB_USER=root \
 	DB_PASS=password \
+	DB_HOST=localhost \
+	DB_PORT=5432 \
+	DB_SCHEMA=geolocation \
 	go run ./cmd/importer/main.go
 
 generate-grpc:

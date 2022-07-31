@@ -7,13 +7,13 @@ import (
 )
 
 type Geolocation struct {
-	IpAddress    string  `csv:"ip_address"`
-	CountryCode  string  `csv:"country_code"`
-	Country      string  `csv:"country"`
-	City         string  `csv:"city"`
-	Latitude     float64 `csv:"latitude"`
-	Longitude    float64 `csv:"longitude"`
-	MysteryValue string  `csv:"mystery_value"`
+	IpAddress    string  `csv:"ip_address" json:"ip_address"`
+	CountryCode  string  `csv:"country_code" json:"country_code"`
+	Country      string  `csv:"country" json:"country"`
+	City         string  `csv:"city" json:"city"`
+	Latitude     float64 `csv:"latitude" json:"latitude"`
+	Longitude    float64 `csv:"longitude" json:"longitude"`
+	MysteryValue string  `csv:"mystery_value" json:"mystery_value,omitempty"`
 }
 
 func (g Geolocation) Validate() error {

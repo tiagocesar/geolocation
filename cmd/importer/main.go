@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -12,6 +13,7 @@ import (
 	"github.com/gocarina/gocsv"
 
 	"github.com/tiagocesar/geolocation/internal/models"
+	"github.com/tiagocesar/geolocation/internal/repo"
 )
 
 /* TODO
@@ -20,29 +22,52 @@ import (
 -[ ] Orchestrate via a compose file
 */
 
-const totalRoutines = 5
+const (
+	totalRoutines = 5
+
+	EnvDumpFile = "DUMP_FILE"
+
+	EnvDbUser   = "DB_USER"
+	EnvDbPass   = "DB_PASS"
+	EnvDbHost   = "DB_HOST"
+	EnvDbPort   = "DB_PORT"
+	EnvDbSchema = "DB_SCHEMA"
+)
+
+type geolocationPersister interface {
+	AddLocationInfo(ctx context.Context, locationInfo models.Geolocation) error
+
+	GetLocationInfoByIP(ctx context.Context, ipAddress string) (*models.Geolocation, error)
+}
 
 type program struct {
 	wg           sync.WaitGroup
 	data         chan models.Geolocation
 	totalLines   uint64
 	invalidLines uint64
+
+	repository geolocationPersister
 }
 
 func main() {
-	filename, dbUser, dbPass, err := getEnvVars()
+	// Getting environment vars
+	envVars, err := getEnvVars()
 	if err != nil {
 		panic(err)
 	}
 
-	// FIXME connect to the db
-	_, _ = dbUser, dbPass
-
-	p := &program{
-		data: make(chan models.Geolocation),
+	repository, err := repo.NewRepository(envVars[EnvDbUser], envVars[EnvDbPass], envVars[EnvDbHost],
+		envVars[EnvDbPort], envVars[EnvDbSchema])
+	if err != nil {
+		panic(err)
 	}
 
-	p.wg.Add(1) // We need to wait for the file processor + geolocation persistence routines
+	p := &program{
+		data:       make(chan models.Geolocation),
+		repository: repository,
+	}
+
+	p.wg.Add(1)
 
 	// Running the goroutines that will persist valid lines
 	for i := 0; i < totalRoutines; i++ {
@@ -73,7 +98,7 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-	}(filename)
+	}(envVars[EnvDumpFile])
 
 	p.wg.Wait()
 
@@ -157,23 +182,35 @@ func csvLineToStruct(header, line string) (models.Geolocation, error) {
 }
 
 // getEnvVars gets all environment variables necessary for this service to run.
-func getEnvVars() (string, string, string, error) {
-	var filename, dbUser, dbPass string
+func getEnvVars() (map[string]string, error) {
+	result := make(map[string]string)
 	var ok bool
 
 	// Getting the file name with the dump file
-	if filename, ok = os.LookupEnv("DUMP_FILE"); !ok {
-		return "", "", "", errors.New("environment variable DUMP_FILE not set")
+	if result[EnvDumpFile], ok = os.LookupEnv(EnvDumpFile); !ok {
+		return nil, errors.New(fmt.Sprintf("environment variable %s not set", EnvDumpFile))
 	}
 
 	// DB vars
-	if dbUser, ok = os.LookupEnv("DB_USER"); !ok {
-		return "", "", "", errors.New("environment variable DB_USER not set")
+	if result[EnvDbUser], ok = os.LookupEnv(EnvDbUser); !ok {
+		return nil, errors.New(fmt.Sprintf("environment variable %s not set", EnvDbUser))
 	}
 
-	if dbPass, ok = os.LookupEnv("DB_PASS"); !ok {
-		return "", "", "", errors.New("environment variable DB_PASS not set")
+	if result[EnvDbPass], ok = os.LookupEnv(EnvDbPass); !ok {
+		return nil, errors.New(fmt.Sprintf("environment variable %s not set", EnvDbPass))
 	}
 
-	return filename, dbUser, dbPass, nil
+	if result[EnvDbHost], ok = os.LookupEnv(EnvDbHost); !ok {
+		return nil, errors.New(fmt.Sprintf("environment variable %s not set", EnvDbHost))
+	}
+
+	if result[EnvDbPort], ok = os.LookupEnv(EnvDbPort); !ok {
+		return nil, errors.New(fmt.Sprintf("environment variable %s not set", EnvDbPort))
+	}
+
+	if result[EnvDbSchema], ok = os.LookupEnv(EnvDbSchema); !ok {
+		return nil, errors.New(fmt.Sprintf("environment variable %s not set", EnvDbSchema))
+	}
+
+	return result, nil
 }
