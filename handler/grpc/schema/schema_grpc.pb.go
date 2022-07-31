@@ -2,9 +2,9 @@
 // versions:
 // - protoc-gen-go-grpc v1.2.0
 // - protoc             v3.21.4
-// source: cmd/importer/handler/schema/schema.proto
+// source: handler/grpc/schema/schema.proto
 
-package grpc_server
+package schema
 
 import (
 	context "context"
@@ -101,5 +101,5 @@ var Geolocation_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "cmd/importer/handler/schema/schema.proto",
+	Metadata: "handler/grpc/schema/schema.proto",
 }
