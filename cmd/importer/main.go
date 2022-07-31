@@ -31,8 +31,6 @@ const (
 
 type geolocationPersister interface {
 	AddLocationInfo(ctx context.Context, locationInfo models.Geolocation) error
-
-	GetLocationInfoByIP(ctx context.Context, ipAddress string) (*models.Geolocation, error)
 }
 
 type program struct {
@@ -46,15 +44,15 @@ func main() {
 		panic(err)
 	}
 
+	// Configuring access to the repository and opening the SQL connection
 	repository, err := repo.NewRepository(envVars[EnvDbUser], envVars[EnvDbPass], envVars[EnvDbHost],
 		envVars[EnvDbPort], envVars[EnvDbSchema])
 	if err != nil {
 		panic(err)
 	}
 
-	fp := NewFileProcessor(repository)
-
-	fp.ExecuteFileImport(envVars[EnvDumpFile])
+	// Importing the dump file to the data store
+	NewFileProcessor(repository).ExecuteFileImport(envVars[EnvDumpFile])
 
 	// FIXME after the GRPC handler is up, program should wait for an exit signal
 }

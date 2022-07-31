@@ -17,6 +17,6 @@ message LocationResponse {
   string countryCode = 2;
   string country = 3;
   string city = 4;
-  float latitude = 5;
-  float longitude = 6;
+  double latitude = 5;
+  double longitude = 6;
 }
