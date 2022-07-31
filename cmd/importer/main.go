@@ -15,7 +15,7 @@ import (
 )
 
 /* TODO
--[ ] Configure the file importer
+-[x] Configure the file importer
 -[ ] Configure and start the GRPC server
 -[ ] Orchestrate via a compose file
 */
@@ -130,7 +130,7 @@ func (p *program) processFile(filename string) error {
 	return nil
 }
 
-// saveGeoData validates and persists geolocation data, returning invalidLines to a channel
+// saveGeoData validates and persists geolocation data, feeding invalidLines via an atomic operation
 func (p *program) saveGeoData() {
 	for g := range p.data {
 		// Checking if the data is valid
