@@ -30,6 +30,8 @@ func main() {
 
 	p := &program{}
 
+	p.wg.Add(1)
+
 	// Processing the file
 	go func(filename string) {
 		err := p.processFile(filename)
@@ -40,6 +42,10 @@ func main() {
 
 	// FIXME connect to the db
 	_, _ = dbUser, dbPass
+
+	p.wg.Wait()
+
+	// FIXME after the GRPC handler is up, program should wait for an exit signal
 }
 
 func (p *program) processFile(filename string) error {
@@ -57,11 +63,7 @@ func (p *program) processFile(filename string) error {
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		if header == "" {
-			// First line is the header. We unmarshal just to make sure it's in the expected format
-			_, err := csvLineToStruct(header, scanner.Text())
-			if err != nil {
-				return err
-			}
+			// First line is the header.
 			header = scanner.Text()
 			continue
 		}
@@ -79,16 +81,18 @@ func (p *program) processFile(filename string) error {
 		return err
 	}
 
+	p.wg.Done()
+
 	return nil
 }
 
-func csvLineToStruct(csvHeader, line string) (*models.Geolocation, error) {
-	var g models.Geolocation
-	if err := gocsv.UnmarshalString(fmt.Sprintf("%s\n%s", csvHeader, line), &g); err != nil {
-		return nil, err
+func csvLineToStruct(header, line string) (models.Geolocation, error) {
+	var g []models.Geolocation
+	if err := gocsv.UnmarshalString(fmt.Sprintf("%s\n%s", header, line), &g); err != nil {
+		return models.Geolocation{}, err
 	}
 
-	return &g, nil
+	return g[0], nil
 }
 
 func getEnvVars() (string, string, string, error) {

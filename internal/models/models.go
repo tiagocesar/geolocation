@@ -1,11 +1,11 @@
 package models
 
 type Geolocation struct {
-	IpAddress    string  `json:"ip_address"`
-	CountryCode  string  `json:"country_code"`
-	Country      string  `json:"country"`
-	City         string  `json:"city"`
-	Latitude     float64 `json:"latitude"`
-	Longitude    float64 `json:"longitude"`
-	MysteryValue string  `json:"mystery_value"`
+	IpAddress    string  `csv:"ip_address"`
+	CountryCode  string  `csv:"country_code"`
+	Country      string  `csv:"country"`
+	City         string  `csv:"city"`
+	Latitude     float64 `csv:"latitude"`
+	Longitude    float64 `csv:"longitude"`
+	MysteryValue string  `csv:"mystery_value"`
 }

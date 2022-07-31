@@ -2,6 +2,9 @@
 .DS_Store
 requirements.md
 
+# File used locally for tests
+data_dump.csv
+
 # Binaries for programs and plugins
 *.exe
 *.exe~
