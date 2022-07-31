@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+option go_package = "github.com/tiagocesar/geolocation/grpc_server";
+
+package grpc_server;
+
+service Geolocation {
+  rpc GetLocationData(LocationRequest) returns (LocationResponse) {}
+}
+
+message LocationRequest {
+  string ip = 1;
+}
+
+message LocationResponse {
+  string ip = 1;
+  string countryCode = 2;
+  string country = 3;
+  string city = 4;
+  float latitude = 5;
+  float longitude = 6;
+}
