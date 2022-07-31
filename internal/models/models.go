@@ -1,4 +1,4 @@
-package schema
+package models
 
 type Geolocation struct {
 	IpAddress    string  `json:"ip_address"`
