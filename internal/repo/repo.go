@@ -23,7 +23,6 @@ func NewRepository(user, pass, host, port, schema string) (*repository, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer func(db *sql.DB) { _ = db.Close() }(db)
 
 	return &repository{
 		db: db,

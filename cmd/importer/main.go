@@ -50,6 +50,8 @@ type program struct {
 }
 
 func main() {
+	startTime := time.Now()
+
 	// Getting environment vars
 	envVars, err := getEnvVars()
 	if err != nil {
@@ -82,7 +84,7 @@ func main() {
 				}
 			}()
 
-			p.saveGeoData()
+			p.persistGeoData()
 		}()
 	}
 
@@ -103,7 +105,9 @@ func main() {
 	p.wg.Wait()
 
 	// FIXME after the GRPC handler is up, program should wait for an exit signal
-	fmt.Println(p)
+
+	fmt.Printf("Elapsed time: %s\n", time.Since(startTime))
+	fmt.Printf("Total lines: %d, invalid lines: %d\n", p.totalLines, p.invalidLines)
 }
 
 // processFile opens the file specified in the DUMP_FILE environment var, checks if it's valid against the defined
@@ -119,8 +123,6 @@ func (p *program) processFile(filename string) error {
 	defer func(file *os.File) { _ = file.Close() }(file)
 
 	header := ""
-	startTime := time.Now()
-
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		if header == "" {
@@ -134,7 +136,7 @@ func (p *program) processFile(filename string) error {
 		// Once the header is known we can continue to the proper lines in the CSV
 		g, err := csvLineToStruct(header, scanner.Text())
 		if err != nil {
-			atomic.AddUint64(&p.invalidLines, 1)
+			p.incrementInvalidCount()
 			continue
 		}
 
@@ -147,26 +149,30 @@ func (p *program) processFile(filename string) error {
 		return err
 	}
 
-	// TODO show time in a nicer way
-	fmt.Println(time.Since(startTime))
-
 	p.wg.Done()
 
 	return nil
 }
 
-// saveGeoData validates and persists geolocation data, feeding invalidLines via an atomic operation
-func (p *program) saveGeoData() {
+// persistGeoData validates and persists geolocation data, feeding invalidLines via an atomic operation
+func (p *program) persistGeoData() {
 	for g := range p.data {
 		// Checking if the data is valid
 		if err := g.Validate(); err != nil {
 			// Incrementing one on the list of total errors
-			atomic.AddUint64(&p.invalidLines, 1)
+			p.incrementInvalidCount()
 			continue
 		}
 
-		fmt.Println(g)
+		err := p.repository.AddLocationInfo(context.Background(), g)
+		if err != nil {
+			p.incrementInvalidCount()
+		}
 	}
+}
+
+func (p *program) incrementInvalidCount() {
+	atomic.AddUint64(&p.invalidLines, 1)
 }
 
 // csvLineToStruct converts each CSV line to a models.Geolocation struct, given the header of the CSV file
