@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/gocarina/gocsv"
@@ -22,9 +23,10 @@ import (
 const totalRoutines = 5
 
 type program struct {
-	wg     sync.WaitGroup
-	data   chan models.Geolocation
-	errors chan error
+	wg           sync.WaitGroup
+	data         chan models.Geolocation
+	totalLines   uint64
+	invalidLines uint64
 }
 
 func main() {
@@ -37,14 +39,36 @@ func main() {
 	_, _ = dbUser, dbPass
 
 	p := &program{
-		data:   make(chan models.Geolocation),
-		errors: make(chan error),
+		data: make(chan models.Geolocation),
 	}
 
-	p.wg.Add(1)
+	p.wg.Add(1) // We need to wait for the file processor + geolocation persistence routines
+
+	// Running the goroutines that will persist valid lines
+	for i := 0; i < totalRoutines; i++ {
+		p.wg.Add(1)
+
+		go func() {
+			defer p.wg.Done()
+
+			defer func() {
+				if r := recover(); r != nil {
+					fmt.Println(fmt.Errorf("recovered from panic: %e", r))
+				}
+			}()
+
+			p.saveGeoData()
+		}()
+	}
 
 	// Processing the file
 	go func(filename string) {
+		defer func() {
+			if r := recover(); r != nil {
+				fmt.Println(fmt.Errorf("recovered from panic: %e", r))
+			}
+		}()
+
 		err := p.processFile(filename)
 		if err != nil {
 			panic(err)
@@ -54,6 +78,7 @@ func main() {
 	p.wg.Wait()
 
 	// FIXME after the GRPC handler is up, program should wait for an exit signal
+	fmt.Println(p)
 }
 
 // processFile opens the file specified in the DUMP_FILE environment var, checks if it's valid against the defined
@@ -68,15 +93,10 @@ func (p *program) processFile(filename string) error {
 	}
 	defer func(file *os.File) { _ = file.Close() }(file)
 
-	for i := 0; i < totalRoutines; i++ {
-		go p.saveGeoData()
-	}
-
 	header := ""
-	scanner := bufio.NewScanner(file)
-	var validLine, invalidLine int
 	startTime := time.Now()
 
+	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		if header == "" {
 			// First line is the header.
@@ -84,21 +104,19 @@ func (p *program) processFile(filename string) error {
 			continue
 		}
 
+		p.totalLines++
+
 		// Once the header is known we can continue to the proper lines in the CSV
 		g, err := csvLineToStruct(header, scanner.Text())
 		if err != nil {
-			invalidLine++
+			atomic.AddUint64(&p.invalidLines, 1)
 			continue
 		}
 
-		validLine++
 		p.data <- g
 	}
 
-	// Consuming from the errors channel just to increment the amount of invalid lines
-	for range p.errors {
-		invalidLine++
-	}
+	close(p.data)
 
 	if err := scanner.Err(); err != nil {
 		return err
@@ -107,20 +125,18 @@ func (p *program) processFile(filename string) error {
 	// TODO show time in a nicer way
 	fmt.Println(time.Since(startTime))
 
-	close(p.data)
-	close(p.errors)
-
 	p.wg.Done()
 
 	return nil
 }
 
-// saveGeoData validates and persists geolocation data, returning errors to a channel
+// saveGeoData validates and persists geolocation data, returning invalidLines to a channel
 func (p *program) saveGeoData() {
 	for g := range p.data {
 		// Checking if the data is valid
 		if err := g.Validate(); err != nil {
-			p.errors <- err
+			// Incrementing one on the list of total errors
+			atomic.AddUint64(&p.invalidLines, 1)
 			continue
 		}
 
