@@ -1,4 +1,4 @@
-
+all: run-importer run-api
 
 run-importer:
 	DUMP_FILE=data_dump.csv \
@@ -7,7 +7,10 @@ run-importer:
 	DB_HOST=localhost \
 	DB_PORT=5432 \
 	DB_SCHEMA=geolocation \
-	go run ./cmd/importer/main.go
+	go run ./cmd/importer/
+
+run-api:
+	echo "TBD"
 
 generate-grpc:
 	protoc --go_out=. --go_opt=paths=source_relative \
