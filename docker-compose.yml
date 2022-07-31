@@ -1,0 +1,14 @@
+services:
+  postgresql:
+    image: postgres:9.5-alpine
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-q", "-d", "postgres", "-U", "root" ]
+      timeout: 45s
+      interval: 10s
+      retries: 10
+    restart: always
+    environment:
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - ./scripts/db:/docker-entrypoint-initdb.d/
