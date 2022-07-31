@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/gocarina/gocsv"
 
@@ -61,6 +62,8 @@ func (p *program) processFile(filename string) error {
 
 	header := ""
 	scanner := bufio.NewScanner(file)
+	var validLine, invalidLine int
+	startTime := time.Now()
 	for scanner.Scan() {
 		if header == "" {
 			// First line is the header.
@@ -71,15 +74,20 @@ func (p *program) processFile(filename string) error {
 		// Once the header is known we can continue to the proper lines in the CSV
 		g, err := csvLineToStruct(header, scanner.Text())
 		if err != nil {
-			return err
+			invalidLine++
+			continue
 		}
 
 		fmt.Println(g)
+		validLine++
 	}
 
 	if err := scanner.Err(); err != nil {
 		return err
 	}
+
+	// TODO show time in a nicer way
+	fmt.Println(time.Since(startTime))
 
 	p.wg.Done()
 
@@ -92,6 +100,7 @@ func csvLineToStruct(header, line string) (models.Geolocation, error) {
 		return models.Geolocation{}, err
 	}
 
+	// gocsv returns an array even if there's only one value
 	return g[0], nil
 }
 
