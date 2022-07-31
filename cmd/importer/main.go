@@ -19,8 +19,12 @@ import (
 -[ ] Orchestrate via a compose file
 */
 
+const totalRoutines = 5
+
 type program struct {
-	wg sync.WaitGroup
+	wg     sync.WaitGroup
+	data   chan models.Geolocation
+	errors chan error
 }
 
 func main() {
@@ -29,7 +33,13 @@ func main() {
 		panic(err)
 	}
 
-	p := &program{}
+	// FIXME connect to the db
+	_, _ = dbUser, dbPass
+
+	p := &program{
+		data:   make(chan models.Geolocation),
+		errors: make(chan error),
+	}
 
 	p.wg.Add(1)
 
@@ -41,14 +51,16 @@ func main() {
 		}
 	}(filename)
 
-	// FIXME connect to the db
-	_, _ = dbUser, dbPass
-
 	p.wg.Wait()
 
 	// FIXME after the GRPC handler is up, program should wait for an exit signal
 }
 
+// processFile opens the file specified in the DUMP_FILE environment var, checks if it's valid against the defined
+// csv schema (defined by the header) and sends each line in the CSV for async processing.
+//
+// The actual contents of each line (after being converted to a models.Geolocation struct) is validated before
+// persisting it.
 func (p *program) processFile(filename string) error {
 	file, err := os.Open(filename)
 	if err != nil {
@@ -56,14 +68,15 @@ func (p *program) processFile(filename string) error {
 	}
 	defer func(file *os.File) { _ = file.Close() }(file)
 
-	totalRoutines := 10
-	// FIXME Fire up the goroutines that will process the file contents
-	_ = totalRoutines
+	for i := 0; i < totalRoutines; i++ {
+		go p.saveGeoData()
+	}
 
 	header := ""
 	scanner := bufio.NewScanner(file)
 	var validLine, invalidLine int
 	startTime := time.Now()
+
 	for scanner.Scan() {
 		if header == "" {
 			// First line is the header.
@@ -78,8 +91,13 @@ func (p *program) processFile(filename string) error {
 			continue
 		}
 
-		fmt.Println(g)
 		validLine++
+		p.data <- g
+	}
+
+	// Consuming from the errors channel just to increment the amount of invalid lines
+	for range p.errors {
+		invalidLine++
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -89,11 +107,29 @@ func (p *program) processFile(filename string) error {
 	// TODO show time in a nicer way
 	fmt.Println(time.Since(startTime))
 
+	close(p.data)
+	close(p.errors)
+
 	p.wg.Done()
 
 	return nil
 }
 
+// saveGeoData validates and persists geolocation data, returning errors to a channel
+func (p *program) saveGeoData() {
+	for g := range p.data {
+		// Checking if the data is valid
+		if err := g.Validate(); err != nil {
+			p.errors <- err
+			continue
+		}
+
+		fmt.Println(g)
+	}
+}
+
+// csvLineToStruct converts each CSV line to a models.Geolocation struct, given the header of the CSV file
+// and the line contents.
 func csvLineToStruct(header, line string) (models.Geolocation, error) {
 	var g []models.Geolocation
 	if err := gocsv.UnmarshalString(fmt.Sprintf("%s\n%s", header, line), &g); err != nil {
@@ -104,6 +140,7 @@ func csvLineToStruct(header, line string) (models.Geolocation, error) {
 	return g[0], nil
 }
 
+// getEnvVars gets all environment variables necessary for this service to run.
 func getEnvVars() (string, string, string, error) {
 	var filename, dbUser, dbPass string
 	var ok bool
