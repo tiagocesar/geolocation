@@ -63,7 +63,7 @@ func (h *httpServer) getGeolocationData(w http.ResponseWriter, req *http.Request
 	j, _ := json.Marshal(location)
 
 	w.WriteHeader(http.StatusOK)
-	_, _ = fmt.Fprint(w, j)
+	_, _ = fmt.Fprint(w, string(j))
 }
 
 func toLocation(response *pb.LocationResponse) models.Geolocation {

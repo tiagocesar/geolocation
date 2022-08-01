@@ -7,6 +7,7 @@ import (
 	"net"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
 	pb "github.com/tiagocesar/geolocation/handler/grpc/schema"
 )
@@ -26,7 +27,9 @@ func NewClient(host, port string) *Client {
 }
 
 func (c *Client) getConnection() (*grpc.ClientConn, error) {
-	conn, err := grpc.Dial(fmt.Sprintf("%s:%s", c.host, c.port))
+	var opts []grpc.DialOption
+	opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(fmt.Sprintf("%s:%s", c.host, c.port), opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +49,8 @@ func (c *Client) GetLocationData(ctx context.Context, ip string) (*pb.LocationRe
 
 	client := pb.NewGeolocationClient(conn)
 
-	data, err := client.GetLocationData(ctx, &pb.LocationRequest{Ip: ipAddress.String()})
+	req := &pb.LocationRequest{Ip: ipAddress.String()}
+	data, err := client.GetLocationData(ctx, req)
 	if err != nil {
 		return nil, err
 	}
