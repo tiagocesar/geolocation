@@ -14,6 +14,10 @@ import (
 	"github.com/tiagocesar/geolocation/internal/models"
 )
 
+type geolocationPersister interface {
+	AddLocationInfo(ctx context.Context, locationInfo models.Geolocation) error
+}
+
 type fileProcessor struct {
 	wg           sync.WaitGroup
 	data         chan models.Geolocation

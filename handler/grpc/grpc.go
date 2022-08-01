@@ -2,6 +2,10 @@ package grpc
 
 import (
 	"context"
+	"fmt"
+	"net"
+
+	"google.golang.org/grpc"
 
 	pb "github.com/tiagocesar/geolocation/handler/grpc/schema"
 	"github.com/tiagocesar/geolocation/internal/models"
@@ -14,6 +18,22 @@ type geolocationQuerier interface {
 type grpcHandler struct {
 	pb.UnimplementedGeolocationServer
 	repository geolocationQuerier
+}
+
+func NewGrpcServer(port string, repository geolocationQuerier) (*net.Listener, *grpc.Server, error) {
+	handler := &grpcHandler{
+		repository: repository,
+	}
+
+	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%s", port))
+	if err != nil {
+		return nil, nil, fmt.Errorf("grpc server - failed to listen: %v", err)
+	}
+
+	grpcServer := grpc.NewServer()
+	pb.RegisterGeolocationServer(grpcServer, handler)
+
+	return &lis, grpcServer, nil
 }
 
 func (h *grpcHandler) GetLocationData(ctx context.Context, in *pb.LocationRequest) (*pb.LocationResponse, error) {

@@ -1,13 +1,14 @@
 package main
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 
-	"github.com/tiagocesar/geolocation/internal/models"
+	"github.com/tiagocesar/geolocation/handler/grpc"
 	"github.com/tiagocesar/geolocation/internal/repo"
 )
 
@@ -27,17 +28,13 @@ const (
 	EnvDbHost   = "DB_HOST"
 	EnvDbPort   = "DB_PORT"
 	EnvDbSchema = "DB_SCHEMA"
+
+	EnvGrpcServerPort = "GRPC_SERVER_PORT"
 )
 
-type geolocationPersister interface {
-	AddLocationInfo(ctx context.Context, locationInfo models.Geolocation) error
-}
-
-type program struct {
-	wg sync.WaitGroup
-}
-
 func main() {
+	var wg sync.WaitGroup
+
 	// Getting environment vars
 	envVars, err := getEnvVars()
 	if err != nil {
@@ -51,10 +48,37 @@ func main() {
 		panic(err)
 	}
 
+	wg.Add(1)
 	// Importing the dump file to the data store
-	NewFileProcessor(repository).ExecuteFileImport(envVars[EnvDumpFile])
+	go func() {
+		defer wg.Done()
 
-	// FIXME after the GRPC handler is up, program should wait for an exit signal
+		NewFileProcessor(repository).ExecuteFileImport(envVars[EnvDumpFile])
+	}()
+
+	// Starting the GRPC server with signals to gracefully stop it
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+
+	listener, grpcServer, err := grpc.NewGrpcServer(envVars[EnvGrpcServerPort], repository)
+
+	wg.Add(1)
+	go func() {
+		s := <-sigCh
+		fmt.Printf("Got signal %v, stopping server\n", s)
+		grpcServer.GracefulStop()
+		wg.Done()
+	}()
+
+	fmt.Println("Starting GRPC server")
+	err = grpcServer.Serve(*listener)
+	if err != nil {
+		panic(err)
+	}
+
+	wg.Wait()
+
+	fmt.Println("Shutdown successful")
 }
 
 // getEnvVars gets all environment variables necessary for this service to run.
@@ -86,6 +110,10 @@ func getEnvVars() (map[string]string, error) {
 
 	if result[EnvDbSchema], ok = os.LookupEnv(EnvDbSchema); !ok {
 		return nil, errors.New(fmt.Sprintf("environment variable %s not set", EnvDbSchema))
+	}
+
+	if result[EnvGrpcServerPort], ok = os.LookupEnv(EnvGrpcServerPort); !ok {
+		return nil, errors.New(fmt.Sprintf("environment variable %s not set", EnvGrpcServerPort))
 	}
 
 	return result, nil
