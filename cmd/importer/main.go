@@ -117,12 +117,12 @@ func getEnvVars() (map[string]string, error) {
 	}
 
 	// GRPC server vars
-	if result[EnvGrpcServerPort], ok = os.LookupEnv(EnvGrpcServerPort); !ok {
-		return nil, errors.New(fmt.Sprintf("environment variable %s not set", EnvGrpcServerPort))
-	}
-
 	if result[EnvGrpcServerHost], ok = os.LookupEnv(EnvGrpcServerHost); !ok {
 		return nil, errors.New(fmt.Sprintf("environment variable %s not set", EnvGrpcServerHost))
+	}
+
+	if result[EnvGrpcServerPort], ok = os.LookupEnv(EnvGrpcServerPort); !ok {
+		return nil, errors.New(fmt.Sprintf("environment variable %s not set", EnvGrpcServerPort))
 	}
 
 	return result, nil

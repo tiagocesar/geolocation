@@ -20,10 +20,11 @@ type geolocationPersister interface {
 }
 
 type fileProcessor struct {
-	wg           sync.WaitGroup
-	data         chan models.Geolocation
-	TotalLines   uint64
-	InvalidLines uint64
+	wg            sync.WaitGroup
+	data          chan models.Geolocation
+	TotalLines    uint64
+	AcceptedLines uint64
+	InvalidLines  uint64
 
 	repository geolocationPersister
 }
@@ -73,8 +74,8 @@ func (fp *fileProcessor) ExecuteFileImport(ctx context.Context, dumpFile string,
 
 	fp.wg.Wait()
 
-	log.Printf("File importer is done = Total lines: %d, invalid lines: %d, elapsed time: %s\n",
-		fp.TotalLines, fp.InvalidLines, time.Since(startTime))
+	log.Printf("File importer is done = Total lines: %d, accepted lines: %d, invalid lines: %d, elapsed time: %s\n",
+		fp.TotalLines, fp.AcceptedLines, fp.InvalidLines, time.Since(startTime))
 }
 
 // processFile opens the file specified in the DUMP_FILE environment var, checks if it's valid against the defined
@@ -134,8 +135,15 @@ func (fp *fileProcessor) persistGeoData(ctx context.Context) {
 		err := fp.repository.AddLocationInfo(ctx, g)
 		if err != nil {
 			fp.incrementInvalidCount()
+			continue
 		}
+
+		fp.incrementAcceptedCount()
 	}
+}
+
+func (fp *fileProcessor) incrementAcceptedCount() {
+	atomic.AddUint64(&fp.AcceptedLines, 1)
 }
 
 func (fp *fileProcessor) incrementInvalidCount() {
