@@ -38,6 +38,7 @@ func (h *httpServer) ConfigureAndServe(host, port string) {
 }
 
 func health(w http.ResponseWriter, _ *http.Request) {
+	_, _ = fmt.Fprint(w, "ok")
 	w.WriteHeader(http.StatusOK)
 }
 

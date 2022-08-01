@@ -48,5 +48,6 @@ func main() {
 
 	httpServer := http.NewHttpServer(grpcClient)
 
+	log.Printf("HTTP server starting on %s:%s", httpHost, httpPort)
 	httpServer.ConfigureAndServe(httpHost, httpPort)
 }
