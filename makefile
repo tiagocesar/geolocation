@@ -1,4 +1,8 @@
-all: run-importer run-api
+run:
+	COMPOSE_PROFILES=backend docker compose up -d
+
+stop:
+	COMPOSE_PROFILES=backend docker compose down
 
 run-importer:
 	DUMP_FILE=data_dump.csv \

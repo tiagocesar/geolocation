@@ -1,3 +1,5 @@
+version: "3.9"
+
 services:
   postgresql:
     image: postgres:9.5-alpine
@@ -16,3 +18,43 @@ services:
       - POSTGRES_PASSWORD=password
     volumes:
       - ./scripts/db:/docker-entrypoint-initdb.d/
+
+  importer:
+    restart: on-failure
+    depends_on:
+      - postgresql
+    profiles: ["backend"]
+    build:
+      context: .
+      dockerfile: ./importer.Dockerfile
+    environment:
+      - DUMP_FILE=data_dump.csv
+      - DB_USER=root
+      - DB_PASS=password
+      - DB_HOST=localhost
+      - DB_PORT=5432
+      - DB_SCHEMA=geolocation
+      - GRPC_SERVER_HOST=localhost
+      - GRPC_SERVER_PORT=8080
+    ports:
+      - "8080:80"
+    expose:
+      - "8080"
+
+  rest-api:
+    restart: on-failure
+    depends_on:
+      - importer
+    profiles: ["backend"]
+    build:
+      context: .
+      dockerfile: ./api.Dockerfile
+    environment:
+      - HTTP_SERVER_HOST=localhost
+      - HTTP_SERVER_PORT=8081
+      - GRPC_SERVER_HOST=localhost
+      - GRPC_SERVER_PORT=8080
+    ports:
+      - "8081:80"
+    expose:
+      - "8081"
