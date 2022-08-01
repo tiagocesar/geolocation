@@ -23,3 +23,11 @@ Other ways of running the services are available:
 - Unit tests can be run via `make unit-tests`;
 - Integration tests can be run via `make integration-tests`;
   - Integration tests have special interfaces for data cleanup that aren't available in the general program.
+
+## Points of improvement
+
+Given more time and if this project was a real-world one, some other things would be checked:
+
+- The GRPC server should run over HTTPS;
+- Service orchestration isn't really ideal to be run from a compose file to real-world scenarios; deployment scripts aren't defined;
+- The services don't implement authentication.
