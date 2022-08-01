@@ -2,7 +2,6 @@ package grpc
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"net"
 
@@ -41,12 +40,7 @@ func NewGrpcServer(port string, repository geolocationQuerier) (*net.Listener, *
 
 func (h *grpcHandler) GetLocationData(ctx context.Context, in *pb.LocationRequest) (*pb.LocationResponse, error) {
 	location, err := h.repository.GetLocationInfoByIP(ctx, in.GetIp())
-	switch err {
-	case nil:
-		break
-	case sql.ErrNoRows:
-		return &pb.LocationResponse{}, nil
-	default:
+	if err != nil {
 		return nil, err
 	}
 

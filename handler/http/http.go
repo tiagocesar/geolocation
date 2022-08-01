@@ -1,7 +1,9 @@
 package http
 
 import (
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -53,7 +55,16 @@ func (h *httpServer) getGeolocationData(w http.ResponseWriter, req *http.Request
 	}
 
 	result, err := h.grpcClient.GetLocationData(ctx, ip)
-	if err != nil {
+	switch {
+	case err == nil:
+		break
+	case errors.As(err, &sql.ErrNoRows):
+		w.WriteHeader(http.StatusNotFound)
+		return
+	case errors.As(err, &grpc_client.ErrInvalidIP):
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	default:
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
