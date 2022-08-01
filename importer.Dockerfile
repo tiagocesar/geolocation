@@ -4,16 +4,15 @@ WORKDIR /app
 
 COPY . .
 
-# For the datadump file
-COPY data_dump.csv .
-
 RUN GOOS=linux go build -o importer ./cmd/importer
 
 FROM alpine:latest
 
 # Copy binary from builder
 COPY --from=builder /app/importer /usr/bin/
+# Copy of the datadump file
+COPY --from=builder /app/data_dump.csv /
 
-EXPOSE 80
+EXPOSE 8080
 
 ENTRYPOINT ["/usr/bin/importer"]

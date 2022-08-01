@@ -11,6 +11,6 @@ FROM alpine:latest
 # Copy binary from builder
 COPY --from=builder /app/api /usr/bin/
 
-EXPOSE 80
+EXPOSE 8081
 
 ENTRYPOINT ["/usr/bin/api"]
