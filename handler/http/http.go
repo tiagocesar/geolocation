@@ -25,14 +25,14 @@ func NewHttpServer(client *grpc_client.Client) *httpServer {
 	}
 }
 
-func (h *httpServer) ConfigureAndServe(host, port string) {
+func (h *httpServer) ConfigureAndServe(port string) {
 	router := chi.NewRouter()
 	router.Use(middleware.Recoverer)
 
 	router.Get("/health", health)
 	router.Get("/locations/{ip}", h.getGeolocationData)
 
-	if err := http.ListenAndServe(fmt.Sprintf("%s:%s", host, port), router); err != nil {
+	if err := http.ListenAndServe(fmt.Sprintf(":%s", port), router); err != nil {
 		log.Fatalf("Failed to start HTTP server")
 	}
 }

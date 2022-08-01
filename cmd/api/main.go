@@ -14,7 +14,6 @@ import (
 */
 
 const (
-	EnvHttpServerHost = "HTTP_SERVER_HOST"
 	EnvHttpServerPort = "HTTP_SERVER_PORT"
 
 	EnvGrpcServerHost = "GRPC_SERVER_HOST"
@@ -26,10 +25,6 @@ func main() {
 
 	// HTTP server vars
 	var httpHost, httpPort string
-	if httpHost, ok = os.LookupEnv(EnvHttpServerHost); !ok {
-		log.Fatalf("environment variable %s not set", EnvHttpServerHost)
-	}
-
 	if httpPort, ok = os.LookupEnv(EnvHttpServerPort); !ok {
 		log.Fatalf("environment variable %s not set", EnvHttpServerPort)
 	}
@@ -49,7 +44,7 @@ func main() {
 	httpServer := http.NewHttpServer(grpcClient)
 
 	log.Printf("HTTP server starting on %s:%s", httpHost, httpPort)
-	httpServer.ConfigureAndServe(httpHost, httpPort)
+	httpServer.ConfigureAndServe(httpPort)
 
 	log.Println("HTTP server exiting")
 	os.Exit(0)

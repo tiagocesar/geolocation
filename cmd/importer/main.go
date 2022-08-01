@@ -32,7 +32,6 @@ const (
 	EnvDbPort   = "DB_PORT"
 	EnvDbSchema = "DB_SCHEMA"
 
-	EnvGrpcServerHost = "GRPC_SERVER_HOST"
 	EnvGrpcServerPort = "GRPC_SERVER_PORT"
 )
 
@@ -64,7 +63,7 @@ func main() {
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
-	listener, grpcServer, err := grpc.NewGrpcServer(envVars[EnvGrpcServerHost], envVars[EnvGrpcServerPort], repository)
+	listener, grpcServer, err := grpc.NewGrpcServer(envVars[EnvGrpcServerPort], repository)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -119,11 +118,7 @@ func getEnvVars() (map[string]string, error) {
 		return nil, errors.New(fmt.Sprintf("environment variable %s not set", EnvDbSchema))
 	}
 
-	// GRPC server vars
-	if result[EnvGrpcServerHost], ok = os.LookupEnv(EnvGrpcServerHost); !ok {
-		return nil, errors.New(fmt.Sprintf("environment variable %s not set", EnvGrpcServerHost))
-	}
-
+	// GRPC server
 	if result[EnvGrpcServerPort], ok = os.LookupEnv(EnvGrpcServerPort); !ok {
 		return nil, errors.New(fmt.Sprintf("environment variable %s not set", EnvGrpcServerPort))
 	}

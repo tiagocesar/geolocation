@@ -22,12 +22,12 @@ type grpcHandler struct {
 	repository geolocationQuerier
 }
 
-func NewGrpcServer(host, port string, repository geolocationQuerier) (*net.Listener, *grpc.Server, error) {
+func NewGrpcServer(port string, repository geolocationQuerier) (*net.Listener, *grpc.Server, error) {
 	handler := &grpcHandler{
 		repository: repository,
 	}
 
-	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%s", host, port))
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%s", port))
 	if err != nil {
 		return nil, nil, fmt.Errorf("grpc server - failed to listen: %v", err)
 	}
