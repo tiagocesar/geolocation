@@ -12,7 +12,11 @@ run-importer:
 	go run ./cmd/importer/
 
 run-api:
-	echo "TBD"
+	HTTP_SERVER_HOST=localhost \
+	HTTP_SERVER_PORT=8081 \
+	GRPC_SERVER_HOST=localhost \
+	GRPC_SERVER_PORT=8080 \
+	go run ./cmd/api/
 
 generate-grpc:
 	protoc --go_out=. --go_opt=paths=source_relative \
