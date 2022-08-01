@@ -42,14 +42,14 @@ func main() {
 	// Getting environment vars
 	envVars, err := getEnvVars()
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	// Configuring access to the repository and opening the SQL connection
 	repository, err := repo.NewRepository(envVars[EnvDbUser], envVars[EnvDbPass], envVars[EnvDbHost],
 		envVars[EnvDbPort], envVars[EnvDbSchema])
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	wg.Add(1)
@@ -65,6 +65,9 @@ func main() {
 	signal.Notify(sigCh, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
 	listener, grpcServer, err := grpc.NewGrpcServer(envVars[EnvGrpcServerHost], envVars[EnvGrpcServerPort], repository)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	wg.Add(1)
 	go func() {
@@ -77,7 +80,7 @@ func main() {
 	log.Println("Starting GRPC server")
 	err = grpcServer.Serve(*listener)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	wg.Wait()

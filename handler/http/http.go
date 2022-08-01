@@ -29,11 +29,16 @@ func (h *httpServer) ConfigureAndServe(host, port string) {
 	router := chi.NewRouter()
 	router.Use(middleware.Recoverer)
 
+	router.Get("/health", health)
 	router.Get("/locations/{ip}", h.getGeolocationData)
 
 	if err := http.ListenAndServe(fmt.Sprintf("%s:%s", host, port), router); err != nil {
 		log.Fatalf("Failed to start HTTP server")
 	}
+}
+
+func health(w http.ResponseWriter, _ *http.Request) {
+	w.WriteHeader(http.StatusOK)
 }
 
 func (h *httpServer) getGeolocationData(w http.ResponseWriter, req *http.Request) {

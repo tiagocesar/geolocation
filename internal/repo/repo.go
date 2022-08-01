@@ -24,6 +24,11 @@ func NewRepository(user, pass, host, port, schema string) (*repository, error) {
 		return nil, err
 	}
 
+	err = db.Ping()
+	if err != nil {
+		return nil, err
+	}
+
 	return &repository{
 		db: db,
 	}, nil

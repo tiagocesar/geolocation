@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"runtime/debug"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -50,7 +51,9 @@ func (fp *fileProcessor) ExecuteFileImport(ctx context.Context, dumpFile string,
 
 			defer func() {
 				if r := recover(); r != nil {
-					log.Println(fmt.Errorf("recovered from panic: %e", r))
+					stack := debug.Stack()
+					log.Println("recovered from panic", r)
+					log.Println(string(stack))
 				}
 			}()
 
@@ -62,7 +65,9 @@ func (fp *fileProcessor) ExecuteFileImport(ctx context.Context, dumpFile string,
 	go func(filename string) {
 		defer func() {
 			if r := recover(); r != nil {
-				log.Println(fmt.Errorf("recovered from panic: %e", r))
+				stack := debug.Stack()
+				log.Println("recovered from panic", r)
+				log.Println(string(stack))
 			}
 		}()
 
@@ -134,6 +139,7 @@ func (fp *fileProcessor) persistGeoData(ctx context.Context) {
 
 		err := fp.repository.AddLocationInfo(ctx, g)
 		if err != nil {
+			log.Println(err)
 			fp.incrementInvalidCount()
 			continue
 		}
