@@ -27,4 +27,3 @@ integration-tests:
 	DB_PORT=5432 \
 	DB_SCHEMA=geolocation \
 	go test -v -tags=integration ./...
-≠
