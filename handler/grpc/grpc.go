@@ -2,10 +2,12 @@ package grpc
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"net"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 
 	pb "github.com/tiagocesar/geolocation/handler/grpc/schema"
 	"github.com/tiagocesar/geolocation/internal/models"
@@ -32,13 +34,19 @@ func NewGrpcServer(port string, repository geolocationQuerier) (*net.Listener, *
 
 	grpcServer := grpc.NewServer()
 	pb.RegisterGeolocationServer(grpcServer, handler)
+	reflection.Register(grpcServer)
 
 	return &lis, grpcServer, nil
 }
 
 func (h *grpcHandler) GetLocationData(ctx context.Context, in *pb.LocationRequest) (*pb.LocationResponse, error) {
 	location, err := h.repository.GetLocationInfoByIP(ctx, in.GetIp())
-	if err != nil {
+	switch err {
+	case nil:
+		break
+	case sql.ErrNoRows:
+		return &pb.LocationResponse{}, nil
+	default:
 		return nil, err
 	}
 

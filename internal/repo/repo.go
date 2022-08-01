@@ -42,14 +42,17 @@ func (r *repository) AddLocationInfo(ctx context.Context, locationInfo models.Ge
 	return nil
 }
 
-func (r *repository) GetLocationInfoByIP(ctx context.Context, ipAddress string) (response *models.Geolocation, err error) {
+func (r *repository) GetLocationInfoByIP(ctx context.Context, ipAddress string) (*models.Geolocation, error) {
 	q := `SELECT ip_address, country_code, country, city, latitude, longitude
 		    FROM ` + tableLocationInfo + `
            WHERE ip_address = $1`
 
+	var response models.Geolocation
 	// err can be sql.ErrNoRows
-	err = r.db.QueryRowContext(ctx, q, ipAddress).Scan(&response.IpAddress, &response.CountryCode, &response.Country,
+	err := r.db.QueryRowContext(ctx, q, ipAddress).Scan(&response.IpAddress, &response.CountryCode, &response.Country,
 		&response.City, &response.Latitude, &response.Longitude)
-
-	return
+	if err != nil {
+		return nil, err
+	}
+	return &response, nil
 }
