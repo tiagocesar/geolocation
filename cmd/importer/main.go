@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"sync"
@@ -65,12 +66,12 @@ func main() {
 	wg.Add(1)
 	go func() {
 		s := <-sigCh
-		fmt.Printf("Got signal %v, stopping server\n", s)
+		log.Printf("Got signal %v, stopping server\n", s)
 		grpcServer.GracefulStop()
 		wg.Done()
 	}()
 
-	fmt.Println("Starting GRPC server")
+	log.Println("Starting GRPC server")
 	err = grpcServer.Serve(*listener)
 	if err != nil {
 		panic(err)
@@ -78,7 +79,7 @@ func main() {
 
 	wg.Wait()
 
-	fmt.Println("Shutdown successful")
+	log.Println("Shutdown successful")
 }
 
 // getEnvVars gets all environment variables necessary for this service to run.

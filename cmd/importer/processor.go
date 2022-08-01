@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"sync"
 	"sync/atomic"
@@ -48,7 +49,7 @@ func (p *fileProcessor) ExecuteFileImport(dumpFile string) {
 
 			defer func() {
 				if r := recover(); r != nil {
-					fmt.Println(fmt.Errorf("recovered from panic: %e", r))
+					log.Println(fmt.Errorf("recovered from panic: %e", r))
 				}
 			}()
 
@@ -60,7 +61,7 @@ func (p *fileProcessor) ExecuteFileImport(dumpFile string) {
 	go func(filename string) {
 		defer func() {
 			if r := recover(); r != nil {
-				fmt.Println(fmt.Errorf("recovered from panic: %e", r))
+				log.Println(fmt.Errorf("recovered from panic: %e", r))
 			}
 		}()
 
@@ -72,8 +73,8 @@ func (p *fileProcessor) ExecuteFileImport(dumpFile string) {
 
 	p.wg.Wait()
 
-	fmt.Printf("Elapsed time: %s\n", time.Since(startTime))
-	fmt.Printf("Total lines: %d, invalid lines: %d\n", p.totalLines, p.invalidLines)
+	log.Printf("File importer is done = Total lines: %d, invalid lines: %d, elapsed time: %s\n",
+		p.totalLines, p.invalidLines, time.Since(startTime))
 }
 
 // processFile opens the file specified in the DUMP_FILE environment var, checks if it's valid against the defined
