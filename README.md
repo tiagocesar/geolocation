@@ -11,6 +11,8 @@ It comprises two services:
 
 ## Running the services
 
+> Before running the services please add the `data_dump.csv` file to the root of the project
+
 The easiest way is to run the `make run` command. It will execute a docker compose file and make all services available. Then the easiest way is to call `http://localhost:8081/locations/{ip}` to interact with the persisted data (not all data will be available on first run, depending on how big the data to be imported is)
 
 Other ways of running the services are available:
