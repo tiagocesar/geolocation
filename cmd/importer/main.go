@@ -15,7 +15,7 @@ import (
 
 /* TODO
 -[x] Configure the file importer
--[ ] Configure and start the GRPC server
+-[x] Configure and start the GRPC server
 -[ ] Orchestrate via a compose file
 */
 
@@ -30,6 +30,7 @@ const (
 	EnvDbPort   = "DB_PORT"
 	EnvDbSchema = "DB_SCHEMA"
 
+	EnvGrpcServerHost = "GRPC_SERVER_HOST"
 	EnvGrpcServerPort = "GRPC_SERVER_PORT"
 )
 
@@ -61,7 +62,7 @@ func main() {
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
-	listener, grpcServer, err := grpc.NewGrpcServer(envVars[EnvGrpcServerPort], repository)
+	listener, grpcServer, err := grpc.NewGrpcServer(envVars[EnvGrpcServerHost], envVars[EnvGrpcServerPort], repository)
 
 	wg.Add(1)
 	go func() {
@@ -87,7 +88,7 @@ func getEnvVars() (map[string]string, error) {
 	result := make(map[string]string)
 	var ok bool
 
-	// Getting the file name with the dump file
+	// File name for the dump file
 	if result[EnvDumpFile], ok = os.LookupEnv(EnvDumpFile); !ok {
 		return nil, errors.New(fmt.Sprintf("environment variable %s not set", EnvDumpFile))
 	}
@@ -113,8 +114,13 @@ func getEnvVars() (map[string]string, error) {
 		return nil, errors.New(fmt.Sprintf("environment variable %s not set", EnvDbSchema))
 	}
 
+	// GRPC server vars
 	if result[EnvGrpcServerPort], ok = os.LookupEnv(EnvGrpcServerPort); !ok {
 		return nil, errors.New(fmt.Sprintf("environment variable %s not set", EnvGrpcServerPort))
+	}
+
+	if result[EnvGrpcServerHost], ok = os.LookupEnv(EnvGrpcServerHost); !ok {
+		return nil, errors.New(fmt.Sprintf("environment variable %s not set", EnvGrpcServerHost))
 	}
 
 	return result, nil

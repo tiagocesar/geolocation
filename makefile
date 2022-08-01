@@ -7,6 +7,7 @@ run-importer:
 	DB_HOST=localhost \
 	DB_PORT=5432 \
 	DB_SCHEMA=geolocation \
+	GRPC_SERVER_HOST=localhost \
 	GRPC_SERVER_PORT=8080 \
 	go run ./cmd/importer/
 
