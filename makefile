@@ -5,6 +5,8 @@ stop:
 	COMPOSE_PROFILES=backend docker compose down --rmi all -v
 
 run-importer:
+	docker compose up -d
+	sleep 5
 	DUMP_FILE=data_dump.csv \
 	DB_USER=root \
 	DB_PASS=password \
