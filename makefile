@@ -27,6 +27,9 @@ generate-grpc:
         --go-grpc_out=. --go-grpc_opt=paths=source_relative \
         ./handler/grpc/schema/schema.proto
 
+unit-tests:
+	go test -v ./...
+
 integration-tests:
 	docker compose up -d
 	DB_USER=root \
