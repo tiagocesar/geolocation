@@ -1,4 +1,6 @@
-package main
+//go:build !integration
+
+package processor
 
 import (
 	"context"
@@ -31,7 +33,7 @@ func Test_persistGeoData(t *testing.T) {
 		}
 		fp := NewFileProcessor(&repository)
 
-		go fp.persistGeoData()
+		go fp.persistGeoData(context.Background())
 
 		fp.data <- mockGeolocation()
 
@@ -44,14 +46,14 @@ func Test_persistGeoData(t *testing.T) {
 		repository := &mockRepository{}
 		fp := NewFileProcessor(repository)
 
-		assert.True(t, fp.invalidLines == 0)
+		assert.True(t, fp.InvalidLines == 0)
 
-		go fp.persistGeoData()
+		go fp.persistGeoData(context.Background())
 
 		fp.data <- models.Geolocation{}
 
 		assert.True(t, repository.AddLocationInfoInvokedCount == 0)
-		assert.True(t, fp.invalidLines == 1)
+		assert.True(t, fp.InvalidLines == 1)
 	})
 }
 

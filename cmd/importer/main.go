@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log"
@@ -10,6 +11,7 @@ import (
 	"syscall"
 
 	"github.com/tiagocesar/geolocation/handler/grpc"
+	"github.com/tiagocesar/geolocation/internal/processor"
 	"github.com/tiagocesar/geolocation/internal/repo"
 )
 
@@ -55,7 +57,7 @@ func main() {
 	go func() {
 		defer wg.Done()
 
-		NewFileProcessor(repository).ExecuteFileImport(envVars[EnvDumpFile])
+		processor.NewFileProcessor(repository).ExecuteFileImport(context.Background(), envVars[EnvDumpFile], totalRoutines)
 	}()
 
 	// Starting the GRPC server with signals to gracefully stop it

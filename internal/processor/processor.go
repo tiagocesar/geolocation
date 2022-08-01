@@ -1,4 +1,4 @@
-package main
+package processor
 
 import (
 	"bufio"
@@ -22,8 +22,8 @@ type geolocationPersister interface {
 type fileProcessor struct {
 	wg           sync.WaitGroup
 	data         chan models.Geolocation
-	totalLines   uint64
-	invalidLines uint64
+	TotalLines   uint64
+	InvalidLines uint64
 
 	repository geolocationPersister
 }
@@ -35,17 +35,17 @@ func NewFileProcessor(repository geolocationPersister) *fileProcessor {
 	}
 }
 
-func (p *fileProcessor) ExecuteFileImport(dumpFile string) {
+func (fp *fileProcessor) ExecuteFileImport(ctx context.Context, dumpFile string, totalRoutines int) {
 	startTime := time.Now()
 
-	p.wg.Add(1)
+	fp.wg.Add(1)
 
 	// Running the goroutines that will persist valid lines
 	for i := 0; i < totalRoutines; i++ {
-		p.wg.Add(1)
+		fp.wg.Add(1)
 
 		go func() {
-			defer p.wg.Done()
+			defer fp.wg.Done()
 
 			defer func() {
 				if r := recover(); r != nil {
@@ -53,7 +53,7 @@ func (p *fileProcessor) ExecuteFileImport(dumpFile string) {
 				}
 			}()
 
-			p.persistGeoData()
+			fp.persistGeoData(ctx)
 		}()
 	}
 
@@ -65,16 +65,16 @@ func (p *fileProcessor) ExecuteFileImport(dumpFile string) {
 			}
 		}()
 
-		err := p.processFile(filename)
+		err := fp.processFile(filename)
 		if err != nil {
 			panic(err)
 		}
 	}(dumpFile)
 
-	p.wg.Wait()
+	fp.wg.Wait()
 
 	log.Printf("File importer is done = Total lines: %d, invalid lines: %d, elapsed time: %s\n",
-		p.totalLines, p.invalidLines, time.Since(startTime))
+		fp.TotalLines, fp.InvalidLines, time.Since(startTime))
 }
 
 // processFile opens the file specified in the DUMP_FILE environment var, checks if it's valid against the defined
@@ -82,7 +82,7 @@ func (p *fileProcessor) ExecuteFileImport(dumpFile string) {
 //
 // The actual contents of each line (after being converted to a models.Geolocation struct) is validated before
 // persisting it.
-func (p *fileProcessor) processFile(filename string) error {
+func (fp *fileProcessor) processFile(filename string) error {
 	file, err := os.Open(filename)
 	if err != nil {
 		return err
@@ -98,48 +98,48 @@ func (p *fileProcessor) processFile(filename string) error {
 			continue
 		}
 
-		p.totalLines++
+		fp.TotalLines++
 
 		// Once the header is known we can continue to the proper lines in the CSV
 		g, err := csvLineToStruct(header, scanner.Text())
 		if err != nil {
-			p.incrementInvalidCount()
+			fp.incrementInvalidCount()
 			continue
 		}
 
-		p.data <- g
+		fp.data <- g
 	}
 
-	close(p.data)
+	close(fp.data)
 
 	if err := scanner.Err(); err != nil {
 		return err
 	}
 
-	p.wg.Done()
+	fp.wg.Done()
 
 	return nil
 }
 
-// persistGeoData validates and persists geolocation data, feeding invalidLines via an atomic operation
-func (p *fileProcessor) persistGeoData() {
-	for g := range p.data {
+// persistGeoData validates and persists geolocation data, feeding InvalidLines via an atomic operation
+func (fp *fileProcessor) persistGeoData(ctx context.Context) {
+	for g := range fp.data {
 		// Checking if the data is valid
 		if err := g.Validate(); err != nil {
 			// Incrementing one on the list of total errors
-			p.incrementInvalidCount()
+			fp.incrementInvalidCount()
 			continue
 		}
 
-		err := p.repository.AddLocationInfo(context.Background(), g)
+		err := fp.repository.AddLocationInfo(ctx, g)
 		if err != nil {
-			p.incrementInvalidCount()
+			fp.incrementInvalidCount()
 		}
 	}
 }
 
-func (p *fileProcessor) incrementInvalidCount() {
-	atomic.AddUint64(&p.invalidLines, 1)
+func (fp *fileProcessor) incrementInvalidCount() {
+	atomic.AddUint64(&fp.InvalidLines, 1)
 }
 
 // csvLineToStruct converts each CSV line to a models.Geolocation struct, given the header of the CSV file
