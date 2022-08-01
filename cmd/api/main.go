@@ -50,4 +50,7 @@ func main() {
 
 	log.Printf("HTTP server starting on %s:%s", httpHost, httpPort)
 	httpServer.ConfigureAndServe(httpHost, httpPort)
+
+	log.Println("HTTP server exiting")
+	os.Exit(0)
 }
