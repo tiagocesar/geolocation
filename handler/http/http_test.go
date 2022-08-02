@@ -2,6 +2,7 @@ package http
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -54,6 +55,24 @@ func TestHandler_getGeolocationData(t *testing.T) {
 				return string(s)
 			},
 		},
+		{
+			name:             "invalid ip should return bad request",
+			ipAddress:        "",
+			expectedRespCode: http.StatusBadRequest,
+			expectedRespBody: func() string {
+				return "invalid IP address"
+			},
+		},
+		{
+			name: "IP not found should return not found",
+			grpcClientMock: &mockGrpcClient{
+				func(ctx context.Context, ip string) (*pb.LocationResponse, error) {
+					return nil, sql.ErrNoRows
+				},
+			},
+			ipAddress:        "192.168.0.1",
+			expectedRespCode: http.StatusNotFound,
+		},
 	}
 
 	for _, test := range tests {
@@ -76,8 +95,11 @@ func TestHandler_getGeolocationData(t *testing.T) {
 			h.getGeolocationData(rr, req)
 
 			require.Equal(t, test.expectedRespCode, rr.Code)
-			resp := test.expectedRespBody()
-			require.Equal(t, resp, rr.Body.String())
+
+			if test.expectedRespBody != nil {
+				resp := test.expectedRespBody()
+				require.Equal(t, resp, rr.Body.String())
+			}
 		})
 	}
 }
