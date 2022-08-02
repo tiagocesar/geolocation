@@ -15,26 +15,22 @@ import (
 var ErrInvalidIP = errors.New("invalid IP address")
 
 type Client struct {
-	host string
-	port string
+	grpcClient pb.GeolocationClient
 }
 
-func NewClient(host, port string) *Client {
-	return &Client{
-		host: host,
-		port: port,
-	}
-}
-
-func (c *Client) getConnection() (*grpc.ClientConn, error) {
+func NewClient(host, port string) (*Client, error) {
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	conn, err := grpc.Dial(fmt.Sprintf("%s:%s", c.host, c.port), opts...)
+	conn, err := grpc.Dial(fmt.Sprintf("%s:%s", host, port), opts...)
 	if err != nil {
 		return nil, err
 	}
 
-	return conn, nil
+	client := pb.NewGeolocationClient(conn)
+
+	return &Client{
+		grpcClient: client,
+	}, nil
 }
 
 func (c *Client) GetLocationData(ctx context.Context, ip string) (*pb.LocationResponse, error) {
@@ -44,13 +40,8 @@ func (c *Client) GetLocationData(ctx context.Context, ip string) (*pb.LocationRe
 		return nil, ErrInvalidIP
 	}
 
-	conn, err := c.getConnection()
-	defer func(conn *grpc.ClientConn) { _ = conn.Close() }(conn)
-
-	client := pb.NewGeolocationClient(conn)
-
 	req := &pb.LocationRequest{Ip: ipAddress.String()}
-	data, err := client.GetLocationData(ctx, req)
+	data, err := c.grpcClient.GetLocationData(ctx, req)
 	if err != nil {
 		return nil, err
 	}

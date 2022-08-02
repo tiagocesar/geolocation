@@ -39,7 +39,7 @@ func main() {
 		log.Fatalf("environment variable %s not set", EnvGrpcServerPort)
 	}
 
-	grpcClient := grpc_client.NewClient(grpcHost, grpcPort)
+	grpcClient, _ := grpc_client.NewClient(grpcHost, grpcPort)
 
 	httpServer := http.NewHttpServer(grpcClient)
 

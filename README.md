@@ -32,4 +32,6 @@ Given more time and if this project was a real-world one, some other things woul
 
 - The GRPC server should run over HTTPS;
 - Service orchestration isn't really ideal to be run from a compose file to real-world scenarios; deployment scripts aren't defined;
-- The services don't implement authentication.
+- The services don't implement authentication;
+- No linters are in place;
+- No CI/CD pipeline is defined.
