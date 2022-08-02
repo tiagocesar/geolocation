@@ -1,6 +1,7 @@
 package http
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -17,8 +18,12 @@ import (
 	"github.com/tiagocesar/geolocation/internal/models"
 )
 
+type locationFinder interface {
+	GetLocationData(ctx context.Context, ip string) (*pb.LocationResponse, error)
+}
+
 type httpServer struct {
-	grpcClient *grpc_client.Client
+	grpcClient locationFinder
 }
 
 func NewHttpServer(client *grpc_client.Client) *httpServer {
