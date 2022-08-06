@@ -6,6 +6,13 @@ import (
 	"strings"
 )
 
+var (
+	ErrValidationInvalidIP          = errors.New("invalid IP address")
+	ErrValidationInvalidCountryCode = errors.New("invalid country code")
+	ErrValidationInvalidCountry     = errors.New("invalid country")
+	ErrValidationInvalidCity        = errors.New("invalid city")
+)
+
 type Geolocation struct {
 	IpAddress    string  `csv:"ip_address" json:"ip_address"`
 	CountryCode  string  `csv:"country_code" json:"country_code"`
@@ -20,19 +27,19 @@ func (g Geolocation) Validate() error {
 	// Checking if the IP is valid
 	ip := net.ParseIP(g.IpAddress)
 	if ip == nil {
-		return errors.New("invalid IP address")
+		return ErrValidationInvalidIP
 	}
 
 	if strings.TrimSpace(g.CountryCode) == "" {
-		return errors.New("invalid country code")
+		return ErrValidationInvalidCountryCode
 	}
 
 	if strings.TrimSpace(g.Country) == "" {
-		return errors.New("invalid country")
+		return ErrValidationInvalidCountry
 	}
 
 	if strings.TrimSpace(g.City) == "" {
-		return errors.New("invalid city")
+		return ErrValidationInvalidCity
 	}
 
 	return nil
