@@ -15,12 +15,6 @@ import (
 	"github.com/tiagocesar/geolocation/internal/repo"
 )
 
-/* TODO
--[x] Configure the file importer
--[x] Configure and start the GRPC server
--[ ] Orchestrate via a compose file
-*/
-
 const (
 	totalRoutines = 10
 

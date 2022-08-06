@@ -8,11 +8,6 @@ import (
 	"github.com/tiagocesar/geolocation/handler/http"
 )
 
-/* TODO
--[ ] Configure and start the HTTP server
--[ ] Orchestrate via a compose file
-*/
-
 const (
 	EnvHttpServerPort = "HTTP_SERVER_PORT"
 
