@@ -63,10 +63,10 @@ func (h *httpServer) getGeolocationData(w http.ResponseWriter, req *http.Request
 	switch {
 	case err == nil:
 		break
-	case errors.As(err, &sql.ErrNoRows):
+	case errors.Is(err, sql.ErrNoRows):
 		w.WriteHeader(http.StatusNotFound)
 		return
-	case errors.As(err, &grpc_client.ErrInvalidIP):
+	case errors.Is(err, grpc_client.ErrInvalidIP):
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	default:
