@@ -5,8 +5,7 @@ stop:
 	COMPOSE_PROFILES=backend docker compose down --rmi all -v
 
 run-importer:
-	docker compose up -d
-	sleep 5
+	docker compose up -d --wait
 	DUMP_FILE=data_dump.csv \
 	DB_USER=root \
 	DB_PASS=password \
@@ -31,7 +30,7 @@ unit-tests:
 	go test -v ./...
 
 integration-tests:
-	docker compose up -d
+	docker compose up -d --wait
 	DB_USER=root \
 	DB_PASS=password \
 	DB_HOST=localhost \
